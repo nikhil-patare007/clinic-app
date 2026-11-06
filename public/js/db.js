@@ -74,10 +74,10 @@ function makeLocal() {
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(KEY));
-      const fresh = seed();
-      if (!saved) return fresh;
-      localStorage.setItem(KEY, JSON.stringify(fresh));
-      return fresh;
+      if (!saved) return seed();
+      const cleaned = { ...saved, labs: {} };
+      localStorage.setItem(KEY, JSON.stringify(cleaned));
+      return cleaned;
     } catch (e) { return seed(); }
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
@@ -89,19 +89,30 @@ function makeLocal() {
   const clone = x => JSON.parse(JSON.stringify(x));
 
   function seed() {
-    return {
-      patients: {},
-      visits: {},
-      growth: {},
-      admissions: {},
-      mar: {},
-      vitals: {},
-      labs: {},
-      ledger: {},
-      counters: { uhid: { n: 0 } },
-      alerts: {},
-      audit: {}
-    };
+    const now = Date.now(), d = new Date(), today = d.toISOString().slice(0, 10);
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const ago = (y, m) => { const x = new Date(); x.setFullYear(x.getFullYear() - y); x.setMonth(x.getMonth() - m); return x.toISOString().slice(0, 10); };
+    const s = { patients: {}, visits: {}, growth: {}, admissions: {}, mar: {}, vitals: {}, labs: {}, ledger: {}, counters: { uhid: { n: 3 }, ['token-' + local]: { n: 3 } }, alerts: {}, audit: {} };
+    s.patients.p1 = { uhid: 'DVC-2026-0001', name: 'Aarav Sachin Patil', dob: ago(0, 2), gender: 'Male', weight: 8.6, guardian: 'Sachin Patil (Father)', mobile: '9890422109', address: 'Rahuri Factory', birthWt: 3.1, gestation: 'Term (39w)', allergies: 'None', vaccines: {}, createdAt: now };
+    s.patients.p2 = { uhid: 'DVC-2026-0002', name: 'Kabir Vishal Shinde', dob: ago(0, 9), gender: 'Male', weight: 8.1, guardian: 'Vishal Shinde (Father)', mobile: '9421500000', address: 'Taklimiya', birthWt: 2.9, gestation: 'Term (38w)', allergies: 'Penicillin', vaccines: {}, createdAt: now };
+    s.patients.p3 = { uhid: 'DVC-2026-0003', name: 'Baby of Pooja Shinde', dob: ago(0, 0), gender: 'Female', weight: 2.8, guardian: 'Pooja Shinde (Mother)', mobile: '9922184910', address: 'Rahuri', birthWt: 2.8, gestation: 'Term (37w)', allergies: 'None', vaccines: {}, createdAt: now };
+    const v = (id, p, tok, st, cc, pr, fee, paid, mode) => s.visits[id] = { patientId: p, patientName: s.patients[p].name, uhid: s.patients[p].uhid, token: tok, tokenLabel: 'OPD-' + String(tok).padStart(3, '0'), date: local, type: 'new', complaints: cc, priority: pr, route: 'opd', status: st, fee, paidAmount: paid, mode, createdAt: now - tok * 600000 };
+    v('v1', 'p1', 1, 'waiting', ['Cold / Cough', 'High Fever'], 3, 600, 600, 'cash');
+    v('v2', 'p2', 2, 'waiting', ['Vomiting', 'Loose Motions'], 2, 600, 0, 'cash');
+    v('v3', 'p3', 3, 'waiting', ['Routine Checkup'], 3, 600, 600, 'upi');
+    s.growth.g1 = { patientId: 'p1', date: ago(2, 0), ageMonths: 16, weight: 10.6, height: 79, hc: 47, createdAt: now };
+    s.growth.g2 = { patientId: 'p1', date: ago(1, 0), ageMonths: 28, weight: 12.6, height: 88, hc: 48.4, createdAt: now };
+    s.growth.g3 = { patientId: 'p1', date: ago(0, 0), ageMonths: 40, weight: 14.2, height: 96, hc: 49.5, createdAt: now };
+    s.admissions.a1 = { patientId: 'p3', name: 'Baby of Pooja Shinde', ageText: 'Day 3', weight: 2.8, gestation: 'Term', bed: 'NICU-2', ward: 'NICU', dx: 'Neonatal jaundice', status: 'active', admittedAt: now - 2 * 86400000, photo: { start: now - 5 * 3600000 }, createdAt: now };
+    s.admissions.a2 = { patientId: 'p2', name: 'Kabir Vishal Shinde', ageText: '1y 8m', weight: 10.5, gestation: '', bed: 'WARD-3', ward: 'IPD', dx: 'Acute gastroenteritis, mild dehydration', status: 'active', admittedAt: now - 86400000, createdAt: now };
+    const t = h => { const x = new Date(); x.setHours(h, 0, 0, 0); return x.getTime(); };
+    s.mar.m1 = { admissionId: 'a1', patientName: 'Baby of Pooja Shinde', bed: 'NICU-2', drug: 'Inj. Ampicillin 75mg', detail: 'IV slow infusion in 5ml NS over 15 min', dueAt: now - 600000, kind: 'scheduled', status: 'pending', createdAt: now };
+    s.mar.m2 = { admissionId: 'a1', patientName: 'Baby of Pooja Shinde', bed: 'NICU-2', drug: 'Eye shield & phototherapy check', detail: 'q2h round, lamp distance 45 cm', dueAt: now + 3600000, kind: 'scheduled', status: 'pending', createdAt: now };
+    s.mar.m3 = { admissionId: 'a2', patientName: 'Kabir Vishal Shinde', bed: 'WARD-3', drug: 'Syp. Ondansetron 2mg (5 ml of 2mg/5ml → 2.5 ml)', detail: '15 min before feeds', dueAt: now + 1800000, kind: 'scheduled', status: 'pending', createdAt: now };
+    s.mar.m4 = { admissionId: 'a2', patientName: 'Kabir Vishal Shinde', bed: 'WARD-3', drug: 'Syp. Paracetamol 250mg/5ml – 2.1 ml', detail: 'If Temp > 100°F, min 4h gap', dueAt: t(0), kind: 'sos', status: 'pending', createdAt: now };
+    s.vitals.vt1 = { admissionId: 'a1', hr: 148, rr: 44, spo2: 97, temp: 98.4, crt: 2, urine: 2.1, bili: 14.6, by: 'Sister Anita Roy', createdAt: now - 3600000 };
+    s.vitals.vt2 = { admissionId: 'a2', hr: 122, rr: 32, spo2: 98, temp: 99.1, crt: 2, urine: 1.2, by: 'Sister Anita Roy', createdAt: now - 7200000 };
+    void today; return s;
   }
 
   return {
