@@ -71,11 +71,22 @@ function makeLocal() {
   };
   let data = load();
   const subs = new Set(), authCbs = new Set();
+  function purgeLegacyLabEntries(labs) {
+    if (!labs || typeof labs !== 'object') return {};
+    return Object.fromEntries(Object.entries(labs).filter(([id, lab]) => {
+      if (!lab || typeof lab !== 'object') return true;
+      const text = [lab.test, lab.patientName, lab.result, lab.flag, lab.mobile].join(' ');
+      const stale = /Micro-Bilirubin \(Total & Direct\)|Nikhil P|khatarnak|Critical/i.test(text)
+        && /Micro-Bilirubin \(Total & Direct\)/i.test(String(lab.test || ''));
+      return !stale;
+    }));
+  }
+
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(KEY));
       if (!saved) return seed();
-      const cleaned = { ...saved, labs: {} };
+      const cleaned = { ...saved, labs: purgeLegacyLabEntries(saved.labs) };
       localStorage.setItem(KEY, JSON.stringify(cleaned));
       return cleaned;
     } catch (e) { return seed(); }
