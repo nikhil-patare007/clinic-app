@@ -14,12 +14,11 @@ const ROUTES = {
   growth: { title: 'Growth Charts', icon: 'chart', roles: ['doctor', 'nurse', 'admin'], load: () => import('./pages/growth.js') },
   admissions: { title: 'Admissions / NICU', icon: 'bed', roles: ['doctor', 'nurse', 'admin', 'reception'], load: () => import('./pages/admissions.js') },
   nursing: { title: 'Nursing & MAR', icon: 'check', roles: ['nurse', 'doctor', 'admin'], load: () => import('./pages/nursing.js') },
-  labs: { title: 'Investigations', icon: 'flask', roles: ['lab', 'doctor', 'nurse', 'admin'], load: () => import('./pages/labs.js') },
   ledger: { title: 'Daily Ledger', icon: 'wallet', roles: ['reception', 'admin', 'doctor'], load: () => import('./pages/ledger.js') },
   consult: { title: 'Consultation', icon: 'doc', roles: ['doctor', 'admin'], hidden: true, load: () => import('./pages/consult.js') },
   patient: { title: 'Patient', icon: 'users', roles: ['reception', 'doctor', 'nurse', 'lab', 'admin'], hidden: true, load: () => import('./pages/patients.js') }
 };
-const MOBILE_TABS = { doctor: ['dashboard', 'queue', 'patients', 'vaccination', 'nursing'], nurse: ['dashboard', 'nursing', 'vaccination', 'admissions', 'patients'], reception: ['dashboard', 'register', 'queue', 'patients', 'vaccination'], lab: ['dashboard', 'labs', 'patients', 'queue'], admin: ['dashboard', 'queue', 'patients', 'vaccination', 'ledger'] };
+const MOBILE_TABS = { doctor: ['dashboard', 'queue', 'patients', 'vaccination', 'nursing'], nurse: ['dashboard', 'nursing', 'vaccination', 'admissions', 'patients'], reception: ['dashboard', 'register', 'queue', 'patients', 'vaccination'], lab: ['dashboard', 'patients', 'queue'], admin: ['dashboard', 'queue', 'patients', 'vaccination', 'ledger'] };
 
 const ctx = { api: null, user: null, route: '', navigate: p => (location.hash = '#/' + p) };
 let cleanup = null, authUnsub = null, alertUnsub = null, navToken = 0;

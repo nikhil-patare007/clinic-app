@@ -17,7 +17,7 @@ export async function renderProfile(view, params, ctx) {
   const { api, user } = ctx, id = params[0];
   const pt = await api.get('patients', id);
   if (!pt) { view.innerHTML = '<div class="empty">Patient not found.</div>'; return; }
-  const [visits, labs, adms] = await Promise.all([api.query('visits', [['patientId', id]]), api.query('labs', [['patientId', id]]), api.query('admissions', [['patientId', id]])]);
+  const [visits, adms] = await Promise.all([api.query('visits', [['patientId', id]]), api.query('admissions', [['patientId', id]])]);
   visits.sort((a, b) => b.createdAt - a.createdAt);
   const vax = { ...(pt.vaccines || {}) };
   const canEdit = ['doctor', 'nurse', 'admin'].includes(user.role);
@@ -29,7 +29,7 @@ export async function renderProfile(view, params, ctx) {
     <div class="muted">Guardian: ${esc(pt.guardian)} · ☎ ${esc(pt.mobile)} · ${esc(pt.address || '')}</div>
     <div class="mt">${chip('Allergies: ' + (pt.allergies || 'None'), pt.allergies && pt.allergies !== 'None' ? 'crit' : 'ok')} ${pt.gestation ? chip(pt.gestation) : ''} ${pt.birthWt ? chip('Birth wt ' + pt.birthWt + ' kg') : ''} ${due ? chip('Dues ' + money(due), 'warn') : ''}</div></div>
     <div class="actions"><a class="btn sec" href="#/growth/${id}">${icon('chart', 18)} Growth</a><a class="btn wa" target="_blank" rel="noopener" href="${waLink(pt.mobile, patientDueWaText({ patientName: pt.name, uhid: pt.uhid, fee: visits[0]?.fee || 0, paid: visits[0]?.paidAmount || 0, due: Math.max((visits[0]?.fee || 0) - (visits[0]?.paidAmount || 0), 0), date: todayStr() }))}">WhatsApp</a>${['admin', 'doctor'].includes(user.role) ? `<button class="btn ghost danger" id="delete-patient">Delete patient</button>` : ''}</div></div></div>
-    <div class="tabs" id="tb">${[['visits', 'Visits'], ['vax', 'Vaccinations'], ['labs', 'Investigations'], ['adm', 'Admissions']].map(([k, l]) => `<button data-t="${k}">${l}</button>`).join('')}</div><div id="tc"></div>`;
+    <div class="tabs" id="tb">${[['visits', 'Visits'], ['vax', 'Vaccinations'], ['adm', 'Admissions']].map(([k, l]) => `<button data-t="${k}">${l}</button>`).join('')}</div><div id="tc"></div>`;
 
   const draw = () => {
     view.querySelectorAll('#tb button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
@@ -59,7 +59,6 @@ export async function renderProfile(view, params, ctx) {
       }).join('') + (customRows ? `<div class="mt"><b>Custom vaccines</b><div class="chips mt">${customRows}</div></div>` : '') + `</div>`;
       void m;
     }
-    if (tab === 'labs') tc.innerHTML = `<div class="card">${labs.length ? labs.sort((a, b) => b.createdAt - a.createdAt).map(l => `<div class="row mb"><div class="info"><b>${esc(l.test)}</b><div class="small muted">${dateStr(l.createdAt)} · ${esc(l.status)}</div></div><div>${esc(l.result || '–')} ${l.flag ? chip(l.flag, l.flag === 'Normal' ? 'ok' : 'crit') : ''}</div></div>`).join('') : '<div class="empty">No investigations.</div>'}</div>`;
     if (tab === 'adm') tc.innerHTML = `<div class="card">${adms.length ? adms.map(a => `<div class="row mb"><div class="token">${esc(a.bed)}</div><div class="info"><b>${esc(a.dx || '')}</b><div class="small muted">Admitted ${dateStr(a.admittedAt)} ${timeStr(a.admittedAt)} · ${esc(a.status)}</div></div></div>`).join('') : '<div class="empty">No admissions.</div>'}</div>`;
   };
   view.addEventListener('click', async e => {
