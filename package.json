@@ -1,0 +1,1 @@
+{"name":"dvc-clinic-app","private":true,"version":"1.0.0","type":"module","scripts":{"serve":"firebase serve --only hosting","deploy":"firebase deploy --only hosting,firestore"},"devDependencies":{"firebase-admin":"^14.5.0"}}

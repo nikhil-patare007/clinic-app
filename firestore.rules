@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    function role() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isAny(roles) { return signedIn() && role() in roles; }
+
+    // Staff profiles: users/{uid} = { name, staffId, role }
+    // role: doctor | nurse | reception | lab | admin
+    match /users/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isAny(['admin']));
+      allow write: if isAny(['admin']);
+    }
+
+    match /patients/{id} {
+      allow read: if signedIn();
+      allow create, update: if isAny(['reception', 'doctor', 'admin']);
+      allow delete: if isAny(['admin']);
+    }
+    match /visits/{id} {
+      allow read: if signedIn();
+      allow create, update: if isAny(['reception', 'doctor', 'admin']);
+      allow delete: if isAny(['admin']);
+    }
+    match /growth/{id} {
+      allow read: if signedIn();
+      allow create, update: if isAny(['doctor', 'nurse', 'reception', 'admin']);
+    }
+    match /admissions/{id} {
+      allow read: if signedIn();
+      allow create, update: if isAny(['doctor', 'nurse', 'admin']);
+    }
+    match /mar/{id} {
+      allow read: if signedIn();
+      allow create: if isAny(['doctor', 'nurse', 'admin']);
+      allow update: if isAny(['doctor', 'nurse', 'admin']);
+    }
+    match /vitals/{id} {
+      allow read: if signedIn();
+      allow create: if isAny(['doctor', 'nurse', 'admin']);
+    }
+    match /labs/{id} {
+      allow read: if signedIn();
+      allow create, update: if isAny(['lab', 'doctor', 'admin']);
+    }
+    match /ledger/{id} {
+      allow read: if signedIn();
+      allow create, update: if isAny(['reception', 'admin']);
+    }
+    match /counters/{id} {
+      allow read, write: if signedIn();
+    }
+    match /alerts/{id} {
+      allow read, create: if signedIn();
+      allow update: if isAny(['doctor', 'nurse', 'admin']);
+    }
+    // Audit log: append-only
+    match /audit/{id} {
+      allow create: if signedIn();
+      allow read: if isAny(['doctor', 'admin']);
+      allow update, delete: if false;
+    }
+  }
+}
