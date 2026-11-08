@@ -24,13 +24,6 @@ Then open:
 http://localhost:8080
 ```
 
-The app supports local demo access without Firebase. Demo accounts:
-- `DVC-PED-01` / `123456`
-- `DVC-NUR-01` / `123456`
-- `DVC-REC-01` / `123456`
-- `DVC-LAB-01` / `123456`
-- `DVC-ADM-01` / `123456`
-
 ## Firebase setup
 1. Create a Firebase project in the Firebase Console.
 2. Enable Email/Password authentication.
