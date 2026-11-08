@@ -64,9 +64,19 @@ tests/
 - Growth curve references are approximate and should be validated against the relevant clinical standard used by the hospital.
 - The app is designed for rapid local demo use and can be connected to Firebase when production deployment is ready.
 
-#screenshots
-screenshots/brave_screenshot_devchospital.web.app (1).png
-screenshots/brave_screenshot_devchospital.web.app (2).png
-screenshots/brave_screenshot_devchospital.web.app (3).png
-screenshots/brave_screenshot_devchospital.web.app (4).png
-screenshots/brave_screenshot_devchospital.web.app.png
+## 📸 Application Screenshots
+
+### Screenshot 1
+![Clinic App Screenshot 1](screenshots/brave_screenshot_devchospital.web.app.png)
+
+### Screenshot 2
+![Clinic App Screenshot 2](screenshots/brave_screenshot_devchospital.web.app%20(1).png)
+
+### Screenshot 3
+![Clinic App Screenshot 3](screenshots/brave_screenshot_devchospital.web.app%20(2).png)
+
+### Screenshot 4
+![Clinic App Screenshot 4](screenshots/brave_screenshot_devchospital.web.app%20(3).png)
+
+### Screenshot 5
+![Clinic App Screenshot 5](screenshots/brave_screenshot_devchospital.web.app%20(4).png)
