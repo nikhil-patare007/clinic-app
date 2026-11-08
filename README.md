@@ -41,15 +41,6 @@ npx firebase deploy --only hosting,firestore
 ## Staff creation
 Use a Firebase service account to create staff users:
 
-```bash
-export GOOGLE_APPLICATION_CREDENTIALS=serviceAccount.json
-node scripts/create-staff.js DVC-PED-01 "Dr. Chothe" doctor 'ChangeMe123'
-node scripts/create-staff.js DVC-NUR-01 "Nurse" nurse 'ChangeMe123'
-node scripts/create-staff.js DVC-REC-01 "Reception" reception 'ChangeMe123'
-node scripts/create-staff.js DVC-LAB-01 "Lab Technician" lab 'ChangeMe123'
-node scripts/create-staff.js DVC-ADM-01 "Admin" admin 'ChangeMe123'
-```
-
 Keep the service account JSON private and do not commit it to the repository.
 
 ## Project structure
