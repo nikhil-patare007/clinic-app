@@ -63,3 +63,10 @@ tests/
 - Clinical medication doses and vaccine lists are configurable from the app data files and should be reviewed before live clinical use.
 - Growth curve references are approximate and should be validated against the relevant clinical standard used by the hospital.
 - The app is designed for rapid local demo use and can be connected to Firebase when production deployment is ready.
+
+#screenshots
+screenshots/brave_screenshot_devchospital.web.app (1).png
+screenshots/brave_screenshot_devchospital.web.app (2).png
+screenshots/brave_screenshot_devchospital.web.app (3).png
+screenshots/brave_screenshot_devchospital.web.app (4).png
+screenshots/brave_screenshot_devchospital.web.app.png
