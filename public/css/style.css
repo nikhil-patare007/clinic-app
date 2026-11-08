@@ -88,6 +88,13 @@ input[type=checkbox],input[type=radio]{width:20px;min-height:20px;height:20px;ac
 .tabs button{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:500;color:var(--text2)}
 .tabs button.on{background:var(--teal);color:#fff;border-color:var(--teal)}
 .list{display:grid;gap:10px}
+.medicine-master{display:grid;gap:12px;padding:12px;border:1px solid var(--line);border-radius:var(--r-lg);background:linear-gradient(180deg,#f8fafc 0%,#fff 100%)}
+.medicine-input-wrap{display:grid;gap:8px}
+.medicine-input-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}
+.medicine-form{padding-top:8px}
+.medicine-catalog .chips{gap:8px}
+.medicine-tag{cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;min-height:34px}
+.medicine-tag:hover{background:var(--field)}
 .row{display:flex;gap:14px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:var(--r);background:#fff;min-height:64px}
 .row.hl{background:#f0fdfa;border-color:#99f6e4}.row.crit{background:var(--crit-bg);border-color:#fecaca}
 .token{min-width:56px;text-align:center;background:var(--teal);color:#fff;border-radius:10px;padding:6px 8px;font:700 15px "Plus Jakarta Sans",Inter,system-ui,sans-serif}
@@ -210,3 +217,50 @@ svg.chart{width:100%;height:auto;background:#fff;border-radius:12px}
   .vx-add-row{grid-template-columns:1fr}
   .vx-search{max-width:none}
 }
+
+/* ---- Buttons: destructive ---- */
+.btn.ghost.danger{color:var(--crit-t);border-color:#fecaca}
+.btn.ghost.danger:hover{background:var(--crit-bg)}
+.btn.danger-solid{background:var(--crit)}
+.btn.danger-solid:hover{background:#dc2626}
+
+/* ---- Developer credit (login + sidebar footer) ---- */
+.studio-brand{display:inline-flex;flex-direction:column;gap:3px;padding:8px 12px 9px;border-radius:12px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);text-decoration:none;line-height:1;opacity:.96;transition:opacity .15s}
+.studio-brand:hover{opacity:1}
+.studio-brand:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.studio-brand .sb-label{font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#52525b;font-weight:600}
+.studio-brand .sb-name{display:inline-flex;align-items:center;gap:6px;font:700 12px/1 "Plus Jakarta Sans",Inter,system-ui,sans-serif;color:#111827;letter-spacing:.01em}
+.studio-brand .sb-logo{display:grid;place-items:center;width:17px;height:17px;border-radius:5px;background:#f3f4f6;border:1px solid #e5e7eb}
+.studio-brand .sb-logo img{display:block;width:13px;height:auto}
+.studio-brand.on-side{align-self:flex-start;margin:10px 2px 2px}
+.login-stack{width:min(460px,100%);display:flex;flex-direction:column;align-items:center;gap:14px}
+.login-stack .card{width:100%}
+
+/* ---- Patients list / Medicines ---- */
+.pt-row .info{color:inherit}
+.pt-row>.muted{font-size:20px;line-height:1}
+.med-row .btns{flex-wrap:nowrap}
+.med-defaults summary{cursor:pointer;color:var(--teal-d);font-weight:600;min-height:36px;display:flex;align-items:center}
+.med-add{position:sticky;top:80px}
+@media (max-width:1100px){.med-add{position:static}.med-split .med-add{order:-1}}
+
+/* ---- Vaccination details ---- */
+.vx-info-toggle{display:flex;align-items:center;gap:8px;margin:12px 0 0;font-size:13px;font-weight:500;cursor:pointer;width:fit-content}
+.vx-info{margin:0 0 0 2px;max-width:70ch}
+.vx-detail .chips{flex-direction:column;align-items:flex-start;gap:6px}
+.vx-name small.vx-dose{margin-top:1px}
+
+/* ---- Growth chart ---- */
+.gc-tools{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}
+.chart-wrap{position:relative}
+.chart-tip{position:absolute;transform:translate(-50%,calc(-100% - 12px));background:#0f172a;color:#fff;padding:7px 10px;border-radius:10px;font-size:12px;line-height:17px;pointer-events:none;white-space:nowrap;z-index:5;box-shadow:0 8px 20px rgba(15,23,42,.25)}
+.chart-tip span{color:#cbd5e1}
+.gc-pt{cursor:pointer;outline:none}
+.gc-pt:focus-visible circle:nth-child(2){stroke:#0f172a;stroke-width:3}
+.gc-legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px}
+.gc-legend span{display:inline-flex;align-items:center;gap:6px}
+.gc-legend i{display:inline-block;width:14px;height:8px;border-radius:2px}
+.gc-legend i.dash{height:0;border-top:2px dashed #0d9488;border-radius:0}
+.gc-legend i.dot{width:0;height:12px;border-left:2px dotted #94a3b8;border-radius:0}
+.gc-up{color:var(--ok-t);font-weight:600}.gc-down{color:var(--warn-t);font-weight:600}
+.vx-detail .chips .row{min-height:0}

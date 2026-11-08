@@ -1,7 +1,7 @@
 import { initBackend, MODE } from './db.js';
 import * as api0 from './db.js';
 import { CLINIC } from './clinic.js';
-import { $, $$, esc, icon, toast, debounce, ageText } from './util.js';
+import { $, $$, esc, icon, toast, debounce, ageText, studioBrand } from './util.js';
 
 const ROLE_LABEL = { doctor: 'Chief Pediatrician', nurse: 'Nursing In-Charge', reception: 'Front Desk', lab: 'Lab / Pathology', admin: 'Administrator' };
 // route -> { title, icon, roles, load }
@@ -10,12 +10,14 @@ const ROUTES = {
   register: { title: 'Registration', icon: 'userplus', roles: ['reception', 'doctor', 'admin'], load: () => import('./pages/register.js') },
   queue: { title: 'OPD Queue', icon: 'queue', roles: ['reception', 'doctor', 'nurse', 'admin'], load: () => import('./pages/queue.js') },
   patients: { title: 'Patients', icon: 'users', roles: ['reception', 'doctor', 'nurse', 'lab', 'admin'], load: () => import('./pages/patients.js') },
+  medicines: { title: 'Medicines', icon: 'pill', roles: ['doctor', 'admin'], load: () => import('./pages/medicines.js') },
   vaccination: { title: 'Vaccination', icon: 'check', roles: ['doctor', 'nurse', 'admin', 'reception'], load: () => import('./pages/vaccination.js') },
   growth: { title: 'Growth Charts', icon: 'chart', roles: ['doctor', 'nurse', 'admin'], load: () => import('./pages/growth.js') },
   admissions: { title: 'Admissions / NICU', icon: 'bed', roles: ['doctor', 'nurse', 'admin', 'reception'], load: () => import('./pages/admissions.js') },
   nursing: { title: 'Nursing & MAR', icon: 'check', roles: ['nurse', 'doctor', 'admin'], load: () => import('./pages/nursing.js') },
   labs: { title: 'Investigations', icon: 'flask', roles: ['lab', 'doctor', 'nurse', 'admin'], load: () => import('./pages/labs.js') },
   ledger: { title: 'Daily Ledger', icon: 'wallet', roles: ['reception', 'admin', 'doctor'], load: () => import('./pages/ledger.js') },
+  export: { title: 'Export Data', icon: 'download', roles: ['doctor', 'admin'], load: () => import('./pages/export.js') },
   consult: { title: 'Consultation', icon: 'doc', roles: ['doctor', 'admin'], hidden: true, load: () => import('./pages/consult.js') },
   patient: { title: 'Patient', icon: 'users', roles: ['reception', 'doctor', 'nurse', 'lab', 'admin'], hidden: true, load: () => import('./pages/patients.js') }
 };
@@ -33,7 +35,7 @@ function brandLogo(size = 56) {
   try {
     ctx.api = await initBackend();
   } catch (e) {
-    root.innerHTML = `<div class="login"><div class="card"><h2>Could not start</h2><p class="err-msg">${esc(e.message || e)}</p><p class="muted">Check your internet connection and the Firebase config in <code>js/firebase-config.js</code>.</p></div></div>`;
+    root.innerHTML = `<div class="login"><div class="login-stack"><div class="card"><h2>Could not start</h2><p class="err-msg">${esc(e.message || e)}</p><p class="muted">Check your internet connection and the Firebase config in <code>js/firebase-config.js</code>.</p></div></div>`;
     return;
   }
   authUnsub = ctx.api.onAuth(u => { ctx.user = u; u && u.role ? showShell() : showLogin(u); });
@@ -42,11 +44,10 @@ function brandLogo(size = 56) {
 
 function showLogin(u) {
   cleanup && cleanup(); cleanup = null; alertUnsub && alertUnsub(); alertUnsub = null;
-  root.innerHTML = `<div class="login"><div class="card">
+  root.innerHTML = `<div class="login"><div class="login-stack"><div class="card">
     <div class="brand login-brand" style="padding:0 0 18px"><div class="logo-wrap logo-wrap-login">${brandLogo(88)}</div><div><b style="font-size:17px">${esc(CLINIC.name)}</b><span>${esc('Taklimiya, Rahuri · Staff Portal')}</span></div></div>
     <h2 style="margin-bottom:14px">Staff sign in</h2>
     ${u && !u.role ? `<p class="err-msg mb">Signed in, but this account has no staff profile/role yet. Ask the admin to add it (see README).</p>` : ''}
-    ${MODE === 'demo' ? `<div class="demo-box mb"><b>DEMO MODE</b> (Firebase not configured – data stays in this browser).<br>Staff ID <code>DVC-PED-01</code> (doctor), <code>DVC-NUR-01</code> (nurse), <code>DVC-REC-01</code> (reception), <code>DVC-LAB-01</code> (lab), <code>DVC-ADM-01</code> (admin) · password <code>123456</code></div>` : ''}
     <form id="lf" class="list">
       <div><label for="sid">Employee ID</label><input id="sid" autocomplete="username" autocapitalize="characters" required placeholder="DVC-PED-01"></div>
       <div><label for="pw">Password / PIN</label><div class="pwwrap"><input id="pw" type="password" autocomplete="current-password" required><button type="button" id="tg">Show</button></div></div>
@@ -54,7 +55,7 @@ function showLogin(u) {
       <button class="btn" id="lbtn">${icon('doc', 18)} Sign in</button>
     </form>
     <p class="small muted mt">Authorized clinical personnel only. Emergency: ${CLINIC.phones.join(' / ')}</p>
-  </div></div>`;
+  </div>${studioBrand('on-login')}</div></div>`;
   $('#tg').onclick = () => { const p = $('#pw'); p.type = p.type === 'password' ? 'text' : 'password'; $('#tg').textContent = p.type === 'password' ? 'Show' : 'Hide'; };
   $('#lf').onsubmit = async e => {
     e.preventDefault(); const b = $('#lbtn'); b.disabled = true; $('#lerr').innerHTML = '';
@@ -73,9 +74,9 @@ function showShell() {
       <div class="nav-label">Clinical modules</div>
       <nav class="nav">${nav.map(([k, r]) => `<a href="#/${k}" data-k="${k}">${icon(r.icon)} ${r.title}</a>`).join('')}</nav>
       <div class="side-foot"><b>${esc(CLINIC.qual)}</b><br>${esc(CLINIC.reg)}<br>SOS: ${CLINIC.phones.join(' / ')}</div>
+      ${studioBrand('on-side')}
     </aside>
     <div class="main">
-      ${MODE === 'demo' ? `<div class="mode-banner">DEMO MODE – data is stored only in this browser. Add your Firebase config to go live. <a href="#" id="resetDemo">Reset demo data</a></div>` : ''}
       <div id="alertbar"></div>
       <header class="topbar">
         <button class="btn ghost burger" id="burger" aria-label="Menu">${icon('menu')}</button>

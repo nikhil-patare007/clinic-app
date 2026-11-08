@@ -1,8 +1,13 @@
-import { esc, $, money, ageText, timeStr, dateStr, chip, modal, toast, audit, icon, debounce } from '../util.js';
+import { esc, $, ageText, timeStr, chip, modal, toast, audit, icon, debounce } from '../util.js';
 import { BEDS } from '../clinic.js';
 
 const lim = (v, lo, hi, wlo, whi) => v == null ? '' : (v < lo || v > hi) ? 'crit' : (v < wlo || v > whi) ? 'warn' : 'ok';
-export const vitalCls = { spo2: v => v == null ? '' : v < 90 ? 'crit' : v < 94 ? 'warn' : 'ok', hr: v => lim(v, 60, 200, 80, 170), rr: v => lim(v, 15, 70, 20, 60), temp: v => v == null ? '' : v >= 102 || v < 96 ? 'crit' : v >= 100.4 ? 'warn' : 'ok' };
+export const vitalCls = {
+  spo2: v => v == null ? '' : v < 90 ? 'crit' : v < 94 ? 'warn' : 'ok',
+  hr: v => lim(v, 60, 200, 80, 170),
+  rr: v => lim(v, 15, 70, 20, 60),
+  temp: v => v == null ? '' : v >= 102 || v < 96 ? 'crit' : v >= 100.4 ? 'warn' : 'ok'
+};
 
 export async function render(view, _p, ctx) {
   const { api, user } = ctx;
@@ -19,7 +24,8 @@ export async function render(view, _p, ctx) {
       const ph = a.photo && a.photo.start && !a.photo.stop ? Math.floor((Date.now() - a.photo.start) / 60000) : null;
       const cell = (k, l, u) => `<div class="vital ${v ? vitalCls[k]?.(v[k]) : ''}"><small>${l}</small><b>${v && v[k] != null ? v[k] : '–'}</b>${u ? `<small>${u}</small>` : ''}</div>`;
       return `<div class="bed occ"><div style="display:flex;justify-content:space-between;align-items:center"><b>${b.id}</b>${chip(b.ward, b.ward === 'NICU' ? 'info' : '')}</div>
-        <div><b><a href="#/patient/${a.patientId}">${esc(a.name)}</a></b><div class="small muted">${esc(a.ageText || '')} · ${a.weight || '–'} kg ${a.gestation ? '· ' + esc(a.gestation) : ''}</div><div class="small">${esc(a.dx || '')}</div></div>
+        <div><b><a href="#/patient/${a.patientId}">${esc(a.name)}</a></b><div class="small muted">${esc(a.ageText || '')} · ${a.weight || '–'} kg ${a.gestation ? '· ' + esc(a.gestation) : ''}</div><div class="small">${esc(a.dx || '')}</div>
+        </div>
         <div class="vit">${cell('hr', 'HR', '/min')}${cell('rr', 'RR', '/min')}${cell('spo2', 'SpO₂', '%')}</div>
         <div class="small muted">${v ? 'Temp ' + (v.temp ?? '–') + '°F · ' + (v.bili ? 'Bili ' + v.bili + ' mg/dL · ' : '') + timeStr(v.createdAt) : 'No vitals recorded'} · Day ${Math.max(1, Math.ceil((Date.now() - a.admittedAt) / 86400000))}</div>
         ${a.ward === 'NICU' ? `<div class="small">Phototherapy: ${ph != null ? `<b>ON ${Math.floor(ph / 60)}h ${ph % 60}m</b> <button class="btn sm ghost" data-ph="stop:${a.id}">Stop</button>` : `<button class="btn sm ghost" data-ph="start:${a.id}">Start</button>`}</div>` : ''}
@@ -59,3 +65,4 @@ export async function render(view, _p, ctx) {
   const tick = setInterval(draw, 60000);
   return () => { u1(); u2(); clearInterval(tick); };
 }
+

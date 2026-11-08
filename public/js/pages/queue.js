@@ -1,15 +1,17 @@
+import { withoutOrphans, isOrphan, purgeOrphanVisits } from '../cascade.js';
 import { esc, money, todayStr, ageText, chip, priorityChip, modal, toast, timeStr, audit, icon, patientDueWaText, waLink } from '../util.js';
 
 export async function render(view, _p, ctx) {
   const { api, user } = ctx, today = todayStr();
-  let filter = 'all', visits = [];
+  let filter = 'all', visits = [], ids = null, purging = false; // ids = every patient that still exists
   view.innerHTML = `<div class="page-head"><div><h1>OPD queue</h1><p>Live · ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p></div>
     <div class="actions">${['reception', 'doctor', 'admin'].includes(user.role) ? `<a class="btn" href="#/register">${icon('plus', 18)} New registration</a>` : ''}</div></div>
     <div class="tabs" id="tabs"></div><div class="list" id="list"></div>`;
   const draw = () => {
-    const c = k => visits.filter(v => k === 'all' ? true : v.status === k).length;
+    const live = withoutOrphans(visits, ids); // a deleted patient never shows in the queue
+    const c = k => live.filter(v => k === 'all' ? true : v.status === k).length;
     view.querySelector('#tabs').innerHTML = [['all', 'All'], ['waiting', 'Waiting'], ['inroom', 'In consultation'], ['done', 'Done']].map(([k, l]) => `<button class="${filter === k ? 'on' : ''}" data-f="${k}">${l} (${c(k)})</button>`).join('');
-    const rows = visits.filter(v => filter === 'all' || v.status === filter).sort((a, b) => (a.status === 'done') - (b.status === 'done') || a.priority - b.priority || a.token - b.token);
+    const rows = live.filter(v => filter === 'all' || v.status === filter).sort((a, b) => (a.status === 'done') - (b.status === 'done') || a.priority - b.priority || a.token - b.token);
     view.querySelector('#list').innerHTML = rows.length ? rows.map(v => {
       const due = (v.fee || 0) - (v.paidAmount || 0);
       return `<div class="row ${v.priority == 1 ? 'crit' : v.status === 'inroom' ? 'hl' : ''}" style="${v.status === 'done' ? 'opacity:.65' : ''}">
@@ -39,6 +41,12 @@ export async function render(view, _p, ctx) {
       });
     }
   });
-  const un = api.watch('visits', [['date', today]], list => { visits = list; draw(); });
-  return un;
+  const cleanUp = () => {
+    if (!ids || purging || !['doctor', 'admin'].includes(user.role)) return;
+    const orphans = visits.filter(v => isOrphan(v, ids)); if (!orphans.length) return;
+    purging = true; purgeOrphanVisits(api, orphans).catch(() => {}).finally(() => { purging = false; });
+  };
+  const un1 = api.watch('visits', [['date', today]], list => { visits = list; draw(); cleanUp(); });
+  const un2 = api.watch('patients', [], list => { ids = new Set(list.map(p => p.id)); draw(); cleanUp(); });
+  return () => { un1(); un2(); };
 }

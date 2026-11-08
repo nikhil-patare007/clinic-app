@@ -21,33 +21,43 @@ service cloud.firestore {
     match /patients/{id} {
       allow read: if signedIn();
       allow create, update: if isAny(['reception', 'doctor', 'admin']);
-      allow delete: if isAny(['admin']);
+      allow delete: if isAny(['doctor', 'admin']);   // doctor can delete a patient (cascade below)
     }
     match /visits/{id} {
       allow read: if signedIn();
       allow create, update: if isAny(['reception', 'doctor', 'admin']);
-      allow delete: if isAny(['admin']);
+      allow delete: if isAny(['doctor', 'admin']);
     }
     match /growth/{id} {
       allow read: if signedIn();
       allow create, update: if isAny(['doctor', 'nurse', 'reception', 'admin']);
+      allow delete: if isAny(['doctor', 'nurse', 'admin']);
     }
     match /admissions/{id} {
       allow read: if signedIn();
       allow create, update: if isAny(['doctor', 'nurse', 'admin']);
+      allow delete: if isAny(['doctor', 'admin']);
     }
     match /mar/{id} {
       allow read: if signedIn();
       allow create: if isAny(['doctor', 'nurse', 'admin']);
       allow update: if isAny(['doctor', 'nurse', 'admin']);
+      allow delete: if isAny(['doctor', 'admin']);
     }
     match /vitals/{id} {
       allow read: if signedIn();
       allow create: if isAny(['doctor', 'nurse', 'admin']);
+      allow delete: if isAny(['doctor', 'admin']);
     }
     match /labs/{id} {
       allow read: if signedIn();
       allow create, update: if isAny(['lab', 'doctor', 'admin']);
+      allow delete: if isAny(['doctor', 'admin']);
+    }
+    // Medicine master list (Medicines module -> prescription dropdown)
+    match /medicines/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAny(['doctor', 'admin']);
     }
     match /ledger/{id} {
       allow read: if signedIn();
@@ -59,6 +69,7 @@ service cloud.firestore {
     match /alerts/{id} {
       allow read, create: if signedIn();
       allow update: if isAny(['doctor', 'nurse', 'admin']);
+      allow delete: if isAny(['doctor', 'admin']);
     }
     // Audit log: append-only
     match /audit/{id} {

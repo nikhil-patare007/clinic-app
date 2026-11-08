@@ -1,5 +1,7 @@
 import { esc, $, $$, ageText, dateStr, chip, toast, audit, icon, waLink, todayStr, modal, vaccinationScheduleWaText, isVaccinationWindow, normalizeDateValue } from '../util.js';
-import { VACCINES, getVaccineSource, getCustomVaccineEntries, toCustomVaccineKey } from '../clinic.js';
+import { VACCINES, getVaccineSource, getCustomVaccineEntries, toCustomVaccineKey, vaxKey, getVaxEntry, legacyKeys, itemSource, vaccineDueDate } from '../clinic.js';
+
+const ITEM_BY_KEY = new Map(VACCINES.flatMap(g => g.items.map(it => [vaxKey(g, it), it])));
 
 const GOV = 'Government Provided', PVT = 'Private / Paid';
 
@@ -20,25 +22,24 @@ const diffFromToday = iso => {
 const inRange = (item, range) => item.dueISO ? isVaccinationWindow(item.dueISO, range) : range === 'upcoming'; // undated custom vaccines only show under Upcoming
 
 // legacy string (= given on that date) or object entry
-function normalizeVaxEntry(value, vaccineName) {
-  if (typeof value === 'string') return { givenOn: value, source: getVaccineSource(vaccineName), status: 'given', selected: true };
-  if (value && typeof value === 'object') return { ...value, givenOn: value.givenOn || '', source: value.source || getVaccineSource(vaccineName), status: value.status || (value.givenOn ? 'given' : 'pending'), selected: value.selected !== false };
-  return { givenOn: '', source: getVaccineSource(vaccineName), status: 'pending', selected: true };
+function normalizeVaxEntry(value, vaccineName, defaultSource) {
+  const src = defaultSource || getVaccineSource(vaccineName);
+  if (typeof value === 'string') return { givenOn: value, source: src, status: 'given', selected: true };
+  if (value && typeof value === 'object') return { ...value, givenOn: value.givenOn || '', source: value.source || src, status: value.status || (value.givenOn ? 'given' : 'pending'), selected: value.selected !== false };
+  return { givenOn: '', source: src, status: 'pending', selected: true };
 }
 
 // All pending (not given) vaccines of one patient
-function pendingVaccines(pt) {
+export function pendingVaccines(pt) {
   const out = [], map = pt.vaccines || {};
   const dobISO = normalizeDateValue(pt.dob);
   if (dobISO) {
-    const dob = new Date(dobISO + 'T00:00:00');
     for (const g of VACCINES) {
-      const due = new Date(dob.getTime() + g.age * 7 * 86400000);
-      const dueISO = todayStr(due);
-      for (const name of g.items) {
-        const key = g.label + '|' + name, e = normalizeVaxEntry(map[key], name);
+      const dueISO = todayStr(vaccineDueDate(dobISO, g));
+      for (const it of g.items) {
+        const key = vaxKey(g, it), e = normalizeVaxEntry(getVaxEntry(map, key), it.name, itemSource(it));
         if (e.status === 'given' || e.givenOn) continue;
-        out.push({ key, name, group: g.label, dueISO, source: e.source, selected: e.selected, custom: false });
+        out.push({ key, name: it.name, info: it.info, group: g.label, dueISO, source: e.source, selected: e.selected, custom: false });
       }
     }
   }
@@ -72,18 +73,28 @@ export async function render(view, _p, ctx) {
     const q = query.trim().toLowerCase();
     return patients
       .filter(pt => !q || [pt.name, pt.uhid, pt.mobile, pt.guardian].some(v => String(v || '').toLowerCase().includes(q)))
-      .map(pt => ({ pt, items: pendingVaccines(pt).filter(i => inRange(i, range)) }))
+      .map(pt => {
+        const items = pendingVaccines(pt);
+        if (!pt.dob) {
+          return { pt, items: [{ key: 'missing-dob', name: 'Add date of birth to view vaccine schedule', group: 'Patient record', dueISO: null, source: '', selected: false, missingDob: true }] };
+        }
+        return { pt, items: items.filter(i => inRange(i, range)) };
+      })
       .filter(r => r.items.length)
       .sort((a, b) => (a.items[0].dueISO || '9999').localeCompare(b.items[0].dueISO || '9999') || String(a.pt.name).localeCompare(String(b.pt.name)));
   };
 
   const dueChip = d => d == null ? chip('No date', '') : d < 0 ? chip(`Overdue ${-d}d`, 'crit') : d === 0 ? chip('Due today', 'warn') : chip(`In ${d}d`, d <= 7 ? 'warn' : 'info');
 
-  const itemHtml = (pt, i) => `
+  const itemHtml = (pt, i) => {
+    if (i.missingDob) {
+      return `<li class="vx-item off"><div class="vx-name"><strong>${esc(i.name)}</strong><small class="vx-dose">Date of birth is missing. Add it to generate the vaccine schedule.</small></div></li>`;
+    }
+    return `
     <li class="vx-item ${i.selected ? '' : 'off'}">
       <label class="vx-check">
         <input type="checkbox" data-vx="select" data-pt="${esc(pt.id)}" data-key="${esc(i.key)}" ${i.selected ? 'checked' : ''} aria-label="Include ${esc(i.name)} in reminder">
-        <span class="vx-name">${esc(i.name)}<small>${esc(i.group)} · ${esc(fmt(i.dueISO))}</small></span>
+        <span class="vx-name">${esc(i.name)}<small>${esc(i.group)} · ${esc(fmt(i.dueISO))}</small>${i.info ? `<small class="vx-dose">${esc(i.info)}</small>` : ''}</span>
       </label>
       <span class="vx-due">${dueChip(diffFromToday(i.dueISO))}</span>
       <div class="vx-src" role="group" aria-label="Vaccine source">
@@ -91,6 +102,7 @@ export async function render(view, _p, ctx) {
         <button type="button" class="pvt" data-vx="source" data-pt="${esc(pt.id)}" data-key="${esc(i.key)}" data-source="${PVT}" aria-pressed="${i.source === PVT}">Private</button>
       </div>
     </li>`;
+  };
 
   const cardHtml = ({ pt, items }) => {
     const chosen = items.filter(i => i.selected);
@@ -146,8 +158,9 @@ export async function render(view, _p, ctx) {
   }
   const setVax = (pt, key, patch) => {
     const map = { ...(pt.vaccines || {}) }, name = key.split('|').slice(1).join('|');
-    const cur = normalizeVaxEntry(map[key], name);
+    const cur = normalizeVaxEntry(getVaxEntry(map, key), name, itemSource(ITEM_BY_KEY.get(key) || { name }));
     map[key] = { ...cur, ...patch, status: cur.status === 'given' ? 'given' : 'pending' };
+    legacyKeys(key).forEach(lk => delete map[lk]); // old-schedule key is replaced by the new one
     return map;
   };
 

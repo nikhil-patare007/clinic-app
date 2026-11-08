@@ -183,7 +183,11 @@ const ICONS = {
   plus: 'M12 5v14M5 12h14',
   alert: 'M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
   x: 'M18 6L6 18M6 6l12 12',
-  clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2'
+  clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',
+  pill: 'M10.5 20.5l10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7zM8.5 8.5l7 7',
+  download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
+  trash: 'M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6',
+  edit: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z'
 };
 export const icon = (n, s = 20) => `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[n] || ICONS.doc}"/></svg>`;
 
@@ -209,3 +213,9 @@ export const priorityChip = p => p == 1 ? chip('STAT', 'crit') : p == 2 ? chip('
 export async function audit(api, user, action, ref) {
   try { await api.add('audit', { by: user?.staffId || user?.uid || '?', name: user?.name || '', action, ref: ref || '' }); } catch (e) { /* non-blocking */ }
 }
+
+// Small "developer credit" used in the login footer and the sidebar footer.
+export const studioBrand = (cls = '') => `<a class="studio-brand ${cls}" href="https://studi0z.firebaseapp.com/" target="_blank" rel="noopener noreferrer" aria-label="Designed and powered by studi0z">
+  <span class="sb-label">Designed &amp; powered by</span>
+  <span class="sb-name"><span class="sb-logo"><img src="./studi0z.svg" alt="" width="14" height="10" draggable="false"></span>studi0z</span>
+</a>`;

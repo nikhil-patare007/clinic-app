@@ -1,3 +1,4 @@
+import { withoutOrphans } from '../cascade.js';
 import { esc, money, todayStr, ageText, chip, priorityChip, icon } from '../util.js';
 import { DRUGS } from '../clinic.js';
 
@@ -18,7 +19,9 @@ export async function render(view, _p, ctx) {
   </div></div>`;
 
   const unsubs = [];
-  unsubs.push(api.watch('visits', [['date', today]], vs => {
+  let rawVisits = [], ids = null;
+  const paint = () => {
+    const vs = withoutOrphans(rawVisits, ids); // visits of deleted patients are ignored
     const waiting = vs.filter(v => v.status === 'waiting'), collected = vs.reduce((s, v) => s + (v.paidAmount || 0), 0);
     const dues = vs.filter(v => (v.fee || 0) - (v.paidAmount || 0) > 0);
     const stat = (k, v, s, cls = '') => `<div class="card stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
@@ -31,7 +34,9 @@ export async function render(view, _p, ctx) {
     const open = vs.filter(v => v.status !== 'done').sort((a, b) => a.priority - b.priority || a.token - b.token).slice(0, 5);
     q.innerHTML = open.length ? open.map(v => `<div class="row ${v.priority == 1 ? 'crit' : v.status === 'inroom' ? 'hl' : ''}"><div class="token">${esc(v.tokenLabel)}</div><div class="info"><b>${esc(v.patientName)}</b><div class="small muted">${esc((v.complaints || []).join(', ') || '–')}</div></div>${priorityChip(v.priority)}</div>`).join('') : '<div class="empty">No one waiting 🎉</div>';
     view.querySelector('#dues').innerHTML = dues.length ? dues.slice(0, 5).map(v => `<div class="row"><div class="info"><b>${esc(v.patientName)}</b><div class="small muted">${esc(v.tokenLabel)}</div></div><b>${money(v.fee - (v.paidAmount || 0))}</b></div>`).join('') : '<div class="empty">No pending dues</div>';
-  }));
+  };
+  unsubs.push(api.watch('visits', [['date', today]], list => { rawVisits = list; paint(); }));
+  unsubs.push(api.watch('patients', [], list => { ids = new Set(list.map(p => p.id)); paint(); }));
   unsubs.push(api.watch('admissions', [['status', 'active']], as => {
     view.querySelector('#adm').innerHTML = as.length ? as.map(a => `<div class="row"><div class="token">${esc(a.bed)}</div><div class="info"><b>${esc(a.name)}</b><div class="small muted">${esc(a.dx || '')}</div></div></div>`).join('') : '<div class="empty">No active admissions</div>';
   }));

@@ -6,6 +6,7 @@
     "indexes": "firestore.indexes.json"
   },
   "hosting": {
+    "site": "devchospital",
     "public": "public",
     "ignore": [
       "firebase.json",

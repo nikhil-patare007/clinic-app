@@ -69,6 +69,10 @@ function makeLocal() {
     'DVC-LAB-01': { name: 'Lab Technician', role: 'lab' },
     'DVC-ADM-01': { name: 'Admin', role: 'admin' }
   };
+  const PASSWORDS = {
+    'DVC-PED-01': 'Alpha@123!!',
+    'DVC-REC-01': 'ApjVision@2020'
+  };
   let data = load();
   const subs = new Set(), authCbs = new Set();
   function purgeLegacyLabEntries(labs) {
@@ -108,9 +112,9 @@ function makeLocal() {
     s.patients.p2 = { uhid: 'DVC-2026-0002', name: 'Kabir Vishal Shinde', dob: ago(0, 9), gender: 'Male', weight: 8.1, guardian: 'Vishal Shinde (Father)', mobile: '9421500000', address: 'Taklimiya', birthWt: 2.9, gestation: 'Term (38w)', allergies: 'Penicillin', vaccines: {}, createdAt: now };
     s.patients.p3 = { uhid: 'DVC-2026-0003', name: 'Baby of Pooja Shinde', dob: ago(0, 0), gender: 'Female', weight: 2.8, guardian: 'Pooja Shinde (Mother)', mobile: '9922184910', address: 'Rahuri', birthWt: 2.8, gestation: 'Term (37w)', allergies: 'None', vaccines: {}, createdAt: now };
     const v = (id, p, tok, st, cc, pr, fee, paid, mode) => s.visits[id] = { patientId: p, patientName: s.patients[p].name, uhid: s.patients[p].uhid, token: tok, tokenLabel: 'OPD-' + String(tok).padStart(3, '0'), date: local, type: 'new', complaints: cc, priority: pr, route: 'opd', status: st, fee, paidAmount: paid, mode, createdAt: now - tok * 600000 };
-    v('v1', 'p1', 1, 'waiting', ['Cold / Cough', 'High Fever'], 3, 600, 600, 'cash');
-    v('v2', 'p2', 2, 'waiting', ['Vomiting', 'Loose Motions'], 2, 600, 0, 'cash');
-    v('v3', 'p3', 3, 'waiting', ['Routine Checkup'], 3, 600, 600, 'upi');
+    v('v1', 'p1', 1, 'waiting', ['Cold / Cough', 'High Fever'], 3, 100, 100, 'cash');
+    v('v2', 'p2', 2, 'waiting', ['Vomiting', 'Loose Motions'], 2, 100, 0, 'cash');
+    v('v3', 'p3', 3, 'waiting', ['Routine Checkup'], 3, 100, 100, 'upi');
     s.growth.g1 = { patientId: 'p1', date: ago(2, 0), ageMonths: 16, weight: 10.6, height: 79, hc: 47, createdAt: now };
     s.growth.g2 = { patientId: 'p1', date: ago(1, 0), ageMonths: 28, weight: 12.6, height: 88, hc: 48.4, createdAt: now };
     s.growth.g3 = { patientId: 'p1', date: ago(0, 0), ageMonths: 40, weight: 14.2, height: 96, hc: 49.5, createdAt: now };
@@ -129,10 +133,12 @@ function makeLocal() {
   return {
     mode: 'demo',
     async signIn(staffId, pass) {
-      const u = USERS[String(staffId).trim().toUpperCase()];
-      if (!u || pass !== '123456') throw { code: 'auth/invalid-credential' };
-      localStorage.setItem(SESSION, String(staffId).trim().toUpperCase());
-      authCbs.forEach(cb => cb({ uid: staffId, staffId, ...u }));
+      const sid = String(staffId).trim().toUpperCase();
+      const u = USERS[sid];
+      const expected = PASSWORDS[sid] || '123456';
+      if (!u || pass !== expected) throw { code: 'auth/invalid-credential' };
+      localStorage.setItem(SESSION, sid);
+      authCbs.forEach(cb => cb({ uid: sid, staffId: sid, ...u }));
     },
     async signOut() { localStorage.removeItem(SESSION); authCbs.forEach(cb => cb(null)); },
     onAuth(cb) {

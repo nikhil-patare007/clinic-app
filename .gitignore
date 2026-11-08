@@ -17,8 +17,15 @@ firebase-debug.*.log*
 
 # Firebase credentials and secret files
 serviceAccount.json
+serviceAccount*.json
 *.serviceAccount.json
 *-firebase-adminsdk-*.json
+firebase-adminsdk-*.json
+*.pem
+*.key
+*.p12
+*.crt
+firebase-config.local.js
 
 # Local environment files
 .env
@@ -71,6 +78,10 @@ node_modules/
 
 # dotenv environment variables file
 .env
+
+# Local private config overrides
+*.local.json
+*.override.json
 
 # dataconnect generated files
 .dataconnect

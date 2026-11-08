@@ -1,11 +1,13 @@
+import { withoutOrphans } from '../cascade.js';
 import { esc, $, money, todayStr, timeStr, chip, modal, toast, audit, icon, num, waLink, patientDueWaText } from '../util.js';
 
 export async function render(view, _p, ctx) {
-  const { api, user } = ctx; let date = todayStr(), visits = [], extra = [], unsubs = [], duesUn = null, patients = await api.query('patients');
+  const { api, user } = ctx; let date = todayStr(), visits = [], extra = [], unsubs = [], duesUn = null, patUn = null, rawVisits = [], allVisits = [], patients = await api.query('patients'), ids = new Set(patients.map(p => p.id));
   view.innerHTML = `<div class="page-head"><div><h1>Daily ledger</h1><p>OPD fees, other collections and dues</p></div><div class="actions"><input id="dt" type="date" value="${date}" style="width:auto" aria-label="Date"><button class="btn" id="ae">${icon('plus', 18)} Other collection</button></div></div>
   <div class="grid g4 stats-row mb" id="st"></div><div class="card"><h2>Entries</h2><div class="tablewrap"><table><thead><tr><th>Time</th><th>Description</th><th>Mode</th><th class="right">Amount</th></tr></thead><tbody id="tb"></tbody></table></div></div>
   <div class="card mt"><h2>Pending dues (all dates)</h2><div class="list" id="du"></div></div>`;
   const draw = () => {
+    const visits = withoutOrphans(rawVisits, ids); // visits of deleted patients are ignored
     const paid = visits.filter(v => (v.paidAmount || 0) > 0).map(v => ({ t: v.createdAt, d: `Consultation – ${v.patientName} (${v.tokenLabel})`, mode: v.mode, amt: v.paidAmount }));
     const ex = extra.map(e => ({ t: e.createdAt, d: e.desc, mode: e.mode, amt: e.amount }));
     const all = [...paid, ...ex].sort((a, b) => a.t - b.t), sum = m => all.filter(x => x.mode === m).reduce((s, x) => s + x.amt, 0);
@@ -13,10 +15,10 @@ export async function render(view, _p, ctx) {
     $('#st', view).innerHTML = k('Total collected', money(all.reduce((s, x) => s + x.amt, 0)), `${all.length} entries`) + k('Cash', money(sum('cash')), 'in drawer') + k('UPI', money(sum('upi')), 'online') + k('Day dues', money(visits.reduce((s, v) => s + Math.max(0, v.fee - (v.paidAmount || 0)), 0)), 'unpaid today');
     $('#tb', view).innerHTML = all.map(x => `<tr><td>${timeStr(x.t)}</td><td>${esc(x.d)}</td><td>${chip((x.mode || '').toUpperCase())}</td><td class="right"><b>${money(x.amt)}</b></td></tr>`).join('') || '<tr><td colspan="4" class="muted">No entries.</td></tr>';
   };
-  const load = () => { unsubs.forEach(u => u()); unsubs = [api.watch('visits', [['date', date]], l => { visits = l; draw(); }), api.watch('ledger', [['date', date]], l => { extra = l; draw(); })]; };
+  const load = () => { unsubs.forEach(u => u()); unsubs = [api.watch('visits', [['date', date]], l => { rawVisits = l; draw(); }), api.watch('ledger', [['date', date]], l => { extra = l; draw(); })]; };
   load();
-  duesUn = api.watch('visits', [], all => {
-    const d = all.filter(v => (v.fee || 0) - (v.paidAmount || 0) > 0 && v.mode !== 'exempt');
+  const drawDues = () => {
+    const d = withoutOrphans(allVisits, ids).filter(v => (v.fee || 0) - (v.paidAmount || 0) > 0 && v.mode !== 'exempt');
     $('#du', view).innerHTML = d.length ? d.map(v => {
       const patient = patients.find(p => p.id === v.patientId);
       const mobile = patient?.mobile || v.mobile || '';
@@ -25,7 +27,9 @@ export async function render(view, _p, ctx) {
       return `<div class="row"><div class="info"><b>${esc(v.patientName)}</b><div class="small muted">${esc(v.date)} · ${esc(v.tokenLabel)}</div></div><b>${money(due)}</b><div class="btns">${mobile ? `<a class="btn sm wa" target="_blank" rel="noopener" href="${waHref}">WhatsApp</a>` : ''}${['reception', 'admin'].includes(user.role) ? `<button class="btn sm sec" data-pay="${v.id}">Collect</button>` : ''}</div></div>`;
     }).join('') : '<div class="empty">No dues 🎉</div>';
     view._dues = d;
-  });
+  };
+  duesUn = api.watch('visits', [], all => { allVisits = all; drawDues(); });
+  patUn = api.watch('patients', [], list => { patients = list; ids = new Set(list.map(p => p.id)); draw(); drawDues(); });
   $('#dt', view).onchange = e => { date = e.target.value || todayStr(); load(); };
   view.addEventListener('click', e => {
     const p = e.target.closest('[data-pay]');
@@ -35,5 +39,5 @@ export async function render(view, _p, ctx) {
       m.el.querySelector('#es').onclick = async () => { const a = num(m.el.querySelector('#ea').value), d = m.el.querySelector('#ed').value.trim(); if (!a || !d) return toast('Enter description and amount', 'err'); await api.add('ledger', { date, desc: d, amount: a, mode: m.el.querySelector('input[name=em]:checked').value, by: user.name }); audit(api, user, 'ledger_add', d); m.close(); };
     }
   });
-  return () => { unsubs.forEach(u => u()); duesUn && duesUn(); };
+  return () => { unsubs.forEach(u => u()); duesUn && duesUn(); patUn && patUn(); };
 }
